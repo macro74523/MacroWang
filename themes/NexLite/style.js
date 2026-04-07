@@ -43,6 +43,15 @@ const Style = () => {
       animation: shimmer 2s infinite;
     }
 
+    /* Logo 视频滤镜适配亮色模式 */
+    :root:not(.dark) .hero-logo-video {
+      filter: invert(0.9) contrast(1.5) saturate(1.3);
+    }
+
+    :root.dark .hero-logo-video {
+      filter: contrast(1.2) saturate(1.2);
+    }
+
   `}</style>
 }
 

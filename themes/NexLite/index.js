@@ -24,11 +24,11 @@ const LayoutBase = props => {
   const { updateDarkMode } = useGlobal()
 
   useEffect(() => {
-    const defaultAppearance = siteConfig('APPEARANCE', 'light', CONFIG)
+    const defaultAppearance = siteConfig('APPEARANCE', 'dark', CONFIG)
     const savedDarkMode = isBrowser && localStorage.getItem('darkMode')
     
-    if (defaultAppearance === 'dark' && savedDarkMode === null) {
-      updateDarkMode(true)
+    if (savedDarkMode === null) {
+      updateDarkMode(defaultAppearance === 'dark')
       if (isBrowser) {
         document.getElementsByTagName('html')[0].classList.remove('light')
         document.getElementsByTagName('html')[0].classList.add('dark')
@@ -97,13 +97,13 @@ const LayoutSlug = props => {
 
   return (
     <div className='max-w-4xl mx-auto'>
-      <article className='bg-white dark:bg-zinc-800 sm:rounded-2xl sm:shadow-lg sm:overflow-hidden'>
+      <article className='bg-white dark:bg-zinc-800 rounded-2xl shadow-lg overflow-hidden mx-4 sm:mx-0'>
         {post?.pageCover && (
-          <div className='relative aspect-[4/1] overflow-hidden'>
+          <div className='relative aspect-[4/1] overflow-hidden rounded-t-2xl'>
             <img
               src={post.pageCover}
               alt={post.title}
-              className='w-full h-full object-cover opacity-50'
+              className='w-full h-full object-cover opacity-25'
             />
             <div className='absolute inset-0 bg-gradient-to-b from-transparent to-white/80 dark:to-zinc-800/80'></div>
           </div>
@@ -131,9 +131,10 @@ const LayoutSlug = props => {
 }
 
 const LayoutSearch = props => {
-  const { posts, keyword } = props
-  const [searchTerm, setSearchTerm] = useState(keyword || '')
+  const { posts: allPosts, keyword: propsKeyword } = props
   const router = useRouter()
+  const keyword = router.query.keyword || router.query.s || propsKeyword || ''
+  const [searchTerm, setSearchTerm] = useState(keyword)
 
   const handleSearch = (e) => {
     e.preventDefault()
@@ -141,6 +142,16 @@ const LayoutSearch = props => {
       router.push(`/search/${encodeURIComponent(searchTerm.trim())}`)
     }
   }
+
+  // 客户端实时过滤
+  const filteredPosts = allPosts?.filter(post => {
+    if (!searchTerm.trim()) return true
+    const tagContent = post?.tags && Array.isArray(post?.tags) ? post?.tags.join(' ') : ''
+    const categoryContent = post.category && Array.isArray(post.category) ? post.category.join(' ') : ''
+    const searchContent =
+      post.title + (post.summary || '') + tagContent + categoryContent
+    return searchContent.toLowerCase().includes(searchTerm.toLowerCase())
+  }) || []
 
   return (
     <>
@@ -167,31 +178,31 @@ const LayoutSearch = props => {
           </div>
         </form>
 
-        {keyword && (
+        {searchTerm && (
           <div className='flex items-center gap-2 text-zinc-500 dark:text-zinc-400'>
             <i className='fas fa-search'></i>
-            <span>关键词：{keyword}</span>
-            {posts && posts.length > 0 && (
+            <span>关键词：{searchTerm}</span>
+            {filteredPosts.length > 0 && (
               <span className='ml-auto'>
-                找到 {posts.length} 篇相关文章
+                找到 {filteredPosts.length} 篇相关文章
               </span>
             )}
           </div>
         )}
       </div>
       
-      {posts && posts.length > 0 ? (
-        <PostGrid posts={posts} {...props} />
+      {filteredPosts.length > 0 ? (
+        <PostGrid posts={filteredPosts} {...props} />
       ) : (
         <div className='text-center py-20'>
           <div className='text-8xl mb-6'>
             <i className='fas fa-search text-zinc-200 dark:text-zinc-700'></i>
           </div>
           <h3 className='text-2xl font-bold text-zinc-700 dark:text-zinc-300 mb-3'>
-            {keyword ? '没有找到相关内容' : '请输入关键词进行搜索'}
+            {searchTerm ? '没有找到相关内容' : '请输入关键词进行搜索'}
           </h3>
           <p className='text-zinc-500 dark:text-zinc-500 mb-8 max-w-md mx-auto'>
-            {keyword ? `没有找到与「${keyword}」相关的文章，请尝试其他关键词` : '在上方输入框中输入关键词，搜索您感兴趣的内容'}
+            {searchTerm ? `没有找到与「${searchTerm}」相关的文章，请尝试其他关键词` : '在上方输入框中输入关键词，搜索您感兴趣的内容'}
           </p>
           <div className='flex flex-col sm:flex-row items-center justify-center gap-4'>
             <SmartLink
@@ -200,7 +211,7 @@ const LayoutSearch = props => {
               <i className='fas fa-home mr-2'></i>
               返回首页
             </SmartLink>
-            {keyword && (
+            {searchTerm && (
               <button
                 onClick={() => window.history.back()}
                 className='px-6 py-3 bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 rounded-lg hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors font-medium'>
@@ -341,17 +352,14 @@ const Header = props => {
                 <i className='fas fa-play text-white text-lg'></i>
               </div>
             )}
-            <span className='text-xl font-bold text-zinc-800 dark:text-white'>
-              {siteInfo?.title}
-            </span>
           </SmartLink>
 
           <div className='flex items-center gap-4'>
-            <nav className='hidden md:flex items-center gap-6'>
-              <NavLink href='/' label='首页' />
-              <NavLink href='/category' label='分类' />
-              <NavLink href='/tag' label='标签' />
-              <NavLink href='/archive' label='归档' />
+            <nav className='hidden md:flex items-center gap-4'>
+              <NavLink href='/' label='首页' icon='fas fa-home' />
+              <NavLink href='/category' label='分类' icon='fas fa-folder' />
+              <NavLink href='/tag' label='标签' icon='fas fa-tags' />
+              <NavLink href='/archive' label='归档' icon='fas fa-archive' />
               <button
                 onClick={handleSearch}
                 className='p-2 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors'>
@@ -375,32 +383,51 @@ const Header = props => {
   )
 }
 
-const NavLink = ({ href, label }) => {
+const NavLink = ({ href, label, icon }) => {
   const router = useRouter()
-  const isActive = router.asPath === href
+  const isActive = router.pathname === href || router.asPath.startsWith(href)
 
   return (
     <SmartLink
       href={href}
-      className={`px-4 py-2 rounded-lg transition-colors ${
-        isActive
-          ? 'bg-violet-500 text-white'
-          : 'text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800'
-      }`}>
-      {label}
+      className={`flex items-center justify-center w-10 h-10 rounded-lg transition-colors
+        ${isActive 
+          ? 'bg-violet-50 text-violet-600 dark:bg-violet-500/10 dark:text-violet-400' 
+          : 'text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-zinc-900 dark:hover:text-white'
+        }`}
+      title={label}>
+      {icon && <i className={`${icon} text-lg`}></i>}
     </SmartLink>
   )
 }
 
 const Hero = ({ siteInfo }) => {
+  const videoRef = useRef(null)
+
+  const handleVideoEnd = () => {
+    if (videoRef.current) {
+      videoRef.current.pause()
+      videoRef.current.currentTime = videoRef.current.duration
+    }
+  }
+
   return (
     <section className='mb-12 text-center'>
       <div className='max-w-3xl mx-auto'>
-        <h1 className='text-4xl sm:text-5xl lg:text-6xl font-bold mb-4'>
-          <span className='nexlite-gradient-text'>
-            {siteInfo?.title}
-          </span>
-        </h1>
+        <div className='flex justify-center mb-6'>
+          <video
+            ref={videoRef}
+            autoPlay
+            muted
+            playsInline
+            className='h-32 sm:h-40 w-auto object-contain hero-logo-video'
+            onEnded={handleVideoEnd}
+            onError={(e) => {
+              console.log('Video load error:', e)
+            }}>
+            <source src='/videos/macro.webm' type='video/webm' />
+          </video>
+        </div>
         <p className='text-lg sm:text-xl text-zinc-600 dark:text-zinc-400 max-w-2xl mx-auto'>
           {siteInfo?.description}
         </p>
@@ -597,7 +624,7 @@ const Footer = ({ siteInfo }) => {
           © {new Date().getFullYear()} {siteInfo?.title}. All rights reserved.
         </p>
         <p className='text-sm text-zinc-400 dark:text-zinc-500 mt-2'>
-          Powered by Nexvideo theme
+          Powered by NexLite theme
         </p>
       </div>
     </footer>
