@@ -72,6 +72,7 @@ const LayoutIndex = props => {
     <>
       <Hero {...props} />
       <PostGrid posts={sortedPosts} {...props} />
+      <PostGridDesktop posts={sortedPosts} {...props} />
     </>
   )
 }
@@ -88,6 +89,7 @@ const LayoutPostList = props => {
     <>
       <PageHeader title='文章列表' />
       <PostGrid posts={sortedPosts} {...props} />
+      <PostGridDesktop posts={sortedPosts} {...props} />
     </>
   )
 }
@@ -97,9 +99,9 @@ const LayoutSlug = props => {
 
   return (
     <div className='max-w-4xl mx-auto'>
-      <article className='bg-white dark:bg-zinc-800 rounded-2xl shadow-lg overflow-hidden mx-4 sm:mx-0'>
+      <article className='sm:bg-white sm:dark:bg-zinc-800 sm:rounded-2xl sm:shadow-lg sm:overflow-hidden'>
         {post?.pageCover && (
-          <div className='relative aspect-[4/1] overflow-hidden rounded-t-2xl'>
+          <div className='relative aspect-[4/1] overflow-hidden rounded-2xl mx-4 mt-4 sm:mx-0 sm:mt-0 sm:rounded-t-2xl'>
             <img
               src={post.pageCover}
               alt={post.title}
@@ -192,7 +194,10 @@ const LayoutSearch = props => {
       </div>
       
       {filteredPosts.length > 0 ? (
-        <PostGrid posts={filteredPosts} {...props} />
+        <>
+          <PostGrid posts={filteredPosts} {...props} />
+          <PostGridDesktop posts={filteredPosts} {...props} />
+        </>
       ) : (
         <div className='text-center py-20'>
           <div className='text-8xl mb-6'>
@@ -276,7 +281,7 @@ const LayoutCategoryIndex = props => {
   return (
     <>
       <PageHeader title='分类目录' />
-      <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6'>
+      <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6'>
         {categoryOptions?.map(category => (
           <CategoryCard key={category.name} category={category} />
         ))}
@@ -448,7 +453,17 @@ const PageHeader = ({ title }) => {
 
 const PostGrid = ({ posts }) => {
   return (
-    <div className='columns-2 sm:columns-2 lg:columns-3 xl:columns-4 gap-3 space-y-3'>
+    <div className='columns-2 md:hidden gap-3 space-y-3'>
+      {posts?.map(post => (
+        <PostCard key={post.id} post={post} className='break-inside-avoid' />
+      ))}
+    </div>
+  )
+}
+
+const PostGridDesktop = ({ posts }) => {
+  return (
+    <div className='hidden md:grid grid-cols-4 gap-4'>
       {posts?.map(post => (
         <PostCard key={post.id} post={post} />
       ))}
@@ -456,7 +471,7 @@ const PostGrid = ({ posts }) => {
   )
 }
 
-const PostCard = ({ post }) => {
+const PostCard = ({ post, className = '' }) => {
   const title = post.title
   const cover = post.pageCoverThumbnail || post.pageCover
   const [isHovered, setIsHovered] = useState(false)
@@ -501,7 +516,7 @@ const PostCard = ({ post }) => {
   }
 
   return (
-    <article className='break-inside-avoid bg-white dark:bg-zinc-900 rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow duration-300 group'>
+    <article className={`${className} bg-white dark:bg-zinc-900 rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow duration-300 group`}>
       <SmartLink 
         href={post.href} 
         title={title} 
