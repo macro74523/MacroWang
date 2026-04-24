@@ -95,40 +95,188 @@ const LayoutPostList = props => {
 }
 
 const LayoutSlug = props => {
-  const { post, siteInfo } = props
+  const { post, siteInfo, lock, validPassword, recommendPosts } = props
+
+  useEffect(() => {
+    function combineVideo() {
+      const notionArticle = document.querySelector('#article-wrapper #notion-article')
+      if (!notionArticle) return
+
+      const assetWrappers = document.querySelectorAll('.notion-asset-wrapper')
+      if (!assetWrappers || assetWrappers.length === 0) return
+
+      const exists = document.querySelectorAll('.video-wrapper')
+      if (exists && exists.length > 0) return
+
+      const videoWrappers = []
+      const figCaptionValues = []
+
+      assetWrappers.forEach((wrapper, index) => {
+        const figCaption = wrapper.querySelector('figcaption')
+
+        if (
+          !wrapper.classList.contains('notion-asset-wrapper-video') &&
+          !wrapper.classList.contains('notion-asset-wrapper-embed')
+        )
+          return
+
+        if (!figCaption) return
+
+        const figCaptionValue = figCaption?.textContent?.trim() || `P-${index}`
+        figCaptionValues.push(figCaptionValue)
+        videoWrappers.push(wrapper)
+      })
+
+      // 如果没有视频，不创建容器
+      if (videoWrappers.length === 0) return
+
+      const videoWrapper = document.createElement('div')
+      videoWrapper.className = 'video-wrapper py-1 px-3 bg-gray-100 dark:bg-white dark:text-black mx-auto'
+
+      const carouselWrapper = document.createElement('div')
+      carouselWrapper.classList.add('notion-carousel-wrapper')
+
+      videoWrappers.forEach((wrapper, index) => {
+        const carouselItem = document.createElement('div')
+        carouselItem.classList.add('notion-carousel')
+        carouselItem.appendChild(wrapper)
+
+        const iframe = wrapper.querySelector('iframe')
+        if (iframe) {
+          iframe?.setAttribute('data-src', iframe?.getAttribute('src'))
+        }
+
+        if (index === 0) {
+          carouselItem.classList.add('active')
+        } else {
+          iframe?.setAttribute('src', '')
+        }
+
+        carouselWrapper.appendChild(carouselItem)
+      })
+
+      const figCaptionWrapper = document.createElement('div')
+      figCaptionWrapper.className = 'notion-carousel-route py-2 max-h-36 overflow-y-auto'
+
+      figCaptionValues.forEach(value => {
+        const div = document.createElement('div')
+        div.textContent = value
+        div.addEventListener('click', function () {
+          document.querySelectorAll('.notion-carousel').forEach(item => {
+            const iframe = item.querySelector('iframe')
+
+            if (item.querySelector('figcaption').textContent.trim() === value) {
+              item.classList.add('active')
+              if (iframe) {
+                iframe.setAttribute('src', iframe.getAttribute('data-src'))
+              }
+            } else {
+              item.classList.remove('active')
+              if (iframe) {
+                iframe.setAttribute('src', '')
+              }
+            }
+          })
+        })
+        figCaptionWrapper.appendChild(div)
+      })
+
+      videoWrapper.appendChild(carouselWrapper)
+
+      if (figCaptionWrapper.children.length > 1) {
+        videoWrapper.appendChild(figCaptionWrapper)
+      }
+
+      if (
+        notionArticle.firstChild &&
+        notionArticle.contains(notionArticle.firstChild)
+      ) {
+        notionArticle.insertBefore(videoWrapper, notionArticle.firstChild)
+      } else {
+        notionArticle.appendChild(videoWrapper)
+      }
+    }
+
+    setTimeout(() => {
+      combineVideo()
+    }, 1500)
+
+    return () => {
+      const videoWrappers = document.querySelectorAll('.video-wrapper')
+      videoWrappers.forEach(wrapper => {
+        wrapper.parentNode.removeChild(wrapper)
+      })
+    }
+  }, [post])
+
+  if (lock) {
+    return (
+      <div className='max-w-4xl mx-auto'>
+        <div className='bg-white dark:bg-zinc-800 rounded-2xl shadow-lg p-8 text-center'>
+          <i className='fas fa-lock text-4xl text-zinc-400 mb-4'></i>
+          <p className='text-zinc-600 dark:text-zinc-400'>此文章已加密，请输入密码查看</p>
+        </div>
+      </div>
+    )
+  }
 
   return (
-    <div className='max-w-4xl mx-auto'>
-      <article className='sm:bg-white sm:dark:bg-zinc-800 sm:rounded-2xl sm:shadow-lg sm:overflow-hidden'>
-        {post?.pageCover && (
-          <div className='relative aspect-[4/1] overflow-hidden rounded-2xl mx-4 mt-4 sm:mx-0 sm:mt-0 sm:rounded-t-2xl'>
-            <img
-              src={post.pageCover}
-              alt={post.title}
-              className='w-full h-full object-cover opacity-25'
-            />
-            <div className='absolute inset-0 bg-gradient-to-b from-transparent to-white/80 dark:to-zinc-800/80'></div>
-          </div>
-        )}
-        
-        <div className='p-4 sm:p-6 lg:p-8'>
-          <div className='prose dark:prose-invert max-w-none'>
-            <NotionPage post={post} />
-          </div>
+    <>
+      {!lock && post && (
+        <div id='article-wrapper' className='max-w-4xl mx-auto'>
+          {/* 文章主体 */}
+          <div className='w-full'>
+            {/* 视频区域 */}
+            <div className='mb-6'>
+              <div id='notion-article' className='notion-page-content'>
+                <NotionPage post={post} />
+              </div>
+            </div>
 
-          <div className='mt-8 pt-6 border-t border-zinc-200 dark:border-zinc-700'>
-            <h1 className='text-2xl sm:text-3xl lg:text-4xl font-bold text-zinc-800 dark:text-white mb-4'>
-              {post.title}
-            </h1>
-            <PostMeta post={post} />
+            {/* 文章信息 */}
+            <div className='bg-white dark:bg-zinc-800 rounded-2xl shadow-lg p-6 mb-6'>
+              <h1 className='text-2xl sm:text-3xl lg:text-4xl font-bold text-zinc-800 dark:text-white mb-4'>
+                {post?.title}
+              </h1>
+              <PostMeta post={post} />
+            </div>
+
+            {/* 推荐文章 */}
+            {recommendPosts && recommendPosts.length > 0 && (
+              <div className='bg-white dark:bg-zinc-800 rounded-2xl shadow-lg p-6 mb-6'>
+                <h2 className='text-xl font-bold text-zinc-800 dark:text-white mb-4'>
+                  推荐阅读
+                </h2>
+                <div className='grid grid-cols-1 sm:grid-cols-2 gap-4'>
+                  {recommendPosts.slice(0, 4).map((recommendPost, index) => (
+                    <SmartLink
+                      key={index}
+                      href={recommendPost.href}
+                      className='block p-4 border border-zinc-200 dark:border-zinc-700 rounded-lg hover:shadow-md transition-shadow'
+                    >
+                      <h3 className='font-medium text-zinc-800 dark:text-white mb-2 line-clamp-2'>
+                        {recommendPost.title}
+                      </h3>
+                      <p className='text-sm text-zinc-500 dark:text-zinc-400 line-clamp-2'>
+                        {recommendPost.summary || '...'}
+                      </p>
+                    </SmartLink>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* 评论区 */}
+            <div className='bg-white dark:bg-zinc-800 rounded-2xl shadow-lg p-6'>
+              <h2 className='text-xl font-bold text-zinc-800 dark:text-white mb-4'>
+                评论
+              </h2>
+              <Comment post={post} />
+            </div>
           </div>
         </div>
-      </article>
-
-      <div className='mt-6 sm:mt-8 px-4 sm:px-0'>
-        <Comment post={post} />
-      </div>
-    </div>
+      )}
+    </>
   )
 }
 
