@@ -142,6 +142,9 @@ const LayoutSlug = props => {
         carouselItem.appendChild(wrapper)
 
         const iframe = wrapper.querySelector('iframe')
+        const isBiliBili = iframe?.getAttribute('src')?.includes('bilibili.com') || 
+                           iframe?.getAttribute('src')?.includes('player.bilibili')
+
         if (iframe) {
           iframe?.setAttribute('data-src', iframe?.getAttribute('src'))
         }
@@ -149,7 +152,10 @@ const LayoutSlug = props => {
         if (index === 0) {
           carouselItem.classList.add('active')
         } else {
-          iframe?.setAttribute('src', '')
+          // 哔哩哔哩视频不清空src，否则会导致播放问题
+          if (!isBiliBili) {
+            iframe?.setAttribute('src', '')
+          }
         }
 
         carouselWrapper.appendChild(carouselItem)
