@@ -106,7 +106,7 @@ const Comment = ({ frontMatter, className }) => {
 
           {COMMENT_WALINE_SERVER_URL && (
             <div key='Waline'>
-              <WalineComponent />
+              <WalineComponent path={frontMatter.id} />
             </div>
           )}
 

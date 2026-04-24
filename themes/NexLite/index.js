@@ -170,6 +170,8 @@ const LayoutSlug = props => {
         div.addEventListener('click', function () {
           document.querySelectorAll('.notion-carousel').forEach(item => {
             const iframe = item.querySelector('iframe')
+            const isBiliBili = iframe?.getAttribute('data-src')?.includes('bilibili.com') ||
+                               iframe?.getAttribute('data-src')?.includes('player.bilibili')
 
             if (item.querySelector('figcaption').textContent.trim() === value) {
               item.classList.add('active')
@@ -178,7 +180,8 @@ const LayoutSlug = props => {
               }
             } else {
               item.classList.remove('active')
-              if (iframe) {
+              // 哔哩哔哩视频不要清空src
+              if (iframe && !isBiliBili) {
                 iframe.setAttribute('src', '')
               }
             }
