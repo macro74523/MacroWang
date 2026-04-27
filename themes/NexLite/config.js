@@ -1,4 +1,7 @@
 const CONFIG = {
+  // 是否显示切换主题按钮
+  THEME_SWITCH: true,
+
   NEXVIDEO_ARTICLE_COVER_ENABLE: true, // 是否显示文章封面
 
   // 布局配置
